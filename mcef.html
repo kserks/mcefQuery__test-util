@@ -1,0 +1,111 @@
+
+<!DOCTYPE html>
+<html>
+    <head>
+    <title></title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      *{box-sizing: border-box;}
+      body{
+        margin: 0; display: flex; justify-content: center; width: 100vw;height: 100vh; background-color: #556;
+      }
+      .mc{ width: 100vw; height: 100vh; background-color: #334; padding: 30px; }
+      .data-input__wrapper{padding-top: 30px;}
+      #data-input{ height: 150px;font-size: 18px; width: 100%; outline: none; background-color: #556; resize: none;border:0; padding: 20px; color: wheat;}
+      #btn{width: 100%;cursor: pointer; height: 40px;}
+      #data-output{color: gray;font-size: 18px;padding: 20px; background-color: #556; height: 40%;}
+      aside{width: 30%; color: gray; background-color: black; overflow: auto;}
+      li{cursor: pointer;padding: 5px 0; font-size: 20px;}
+      li:hover{color: deepskyblue;}
+      #file-input{margin-top: 30px; color: silver;}
+
+    </style>
+    </head>
+    <body>
+        <div class="mc">
+            <div id="data-output"></div>
+            <div class="data-input__wrapper">
+                <textarea id="data-input" placeholder="input"></textarea>
+                <button id="btn">Отправить</button><input id="file-input" type="file"/>
+            </div>
+           
+        </div>
+        <aside>
+            <ul class="json-dir">
+                
+            </ul>
+        </aside>
+      <script>
+        let dataOutput = document.getElementById("data-output");
+        let dataInput = document.getElementById("data-input");
+        let btn = document.getElementById('btn');
+
+        dataInput.value = '{"target": "cct","id": "0","path": "%ID%","name": "*.*","action": "getTargetItems","data": "","type": "","before": "","after": "","dts": 1644914843,"ars": true}'
+        dataInput.value = 'info'
+        
+        btn.addEventListener('click', function (){
+              getData(dataInput.value)
+        })
+        function getData(data){
+                try{
+                    window.mcefQuery({
+                        request: data,
+                        persistent: true,
+                        onSuccess: response=>{
+                            dataOutput.innerHTML = response;
+                        }
+                    })
+                }
+                catch (e){
+                  dataOutput.innerHTML = e
+                }
+        }
+
+
+     </script>
+<!-------------------------------------------------------------------------->
+
+     <script>
+      // получение списка файлов
+      let jsonList = document.querySelector('ul.json-dir')
+      function getFiles (){
+        jsonList.innerHTML = ''
+        fetch('/json-dir')
+            .then(r=>r.json())
+            .then(files=>{
+
+                files.forEach(file=>{
+                    jsonList.innerHTML += `<li>${file}</li>`;
+                });
+            });
+      };
+      getFiles();
+      // выбор файла      
+      jsonList.addEventListener('click', e=>{
+        if(e.target.tagName!=='LI') return;
+        let fileName = e.target.innerHTML;
+        fetch('/json-file?fileName='+fileName)
+            .then(r=>r.text())
+            .then(fileBody=>{
+                dataInput.value = fileBody;
+            });
+
+      });
+      let fileInput = document.querySelector('#file-input');
+      fileInput.addEventListener('change', event=>{
+        let file = fileInput.files[0]
+        let newFile = new File([file], file.name, { type: 'json' })
+        let body = new FormData()
+        body.append('file', newFile)
+        //jsonList.innerHTML += `<li>${file}</li>`;
+        console.log(file.name)
+        fetch('/save-json', {method: 'POST', body})
+          .then(r=>{
+              getFiles();
+          })
+      })
+
+     </script>
+   </body>
+</html>
